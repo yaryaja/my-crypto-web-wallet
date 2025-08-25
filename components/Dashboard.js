@@ -11,7 +11,7 @@ export default function Dashboard({
 }) {
   // In a real app, you would fetch the balance for the activeAccount
 
-  const displayAddress = `${activeAccount.address}...${activeAccount.address.substring(activeAccount.address.length - 4)}`;
+  const displayAddress = `${activeAccount.address.substring(0, 6)}...${activeAccount.address.substring(activeAccount.address.length - 4)}`;
   
   return (
     <div>
@@ -40,7 +40,7 @@ export default function Dashboard({
 
       <div className="bg-gray-700 p-6 rounded-lg mb-6">
         <p className="text-gray-400 text-sm mb-2">Total Balance</p>
-        <p className="text-4xl font-bold">{balance} ETH</p>
+        <p className="text-4xl font-bold">{Math.round(balance*100000000)/100000000} ETH</p>
       </div>
 
       

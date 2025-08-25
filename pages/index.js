@@ -11,7 +11,10 @@ import {
   loadMnemonic,
   deleteMnemonic,
   getBalance,
-  sendTransaction
+  sendTransaction,
+  loadAccountCount,
+  deleteAccountCount,
+  saveAccountCount
 } from '../lib/wallet';
 
 export default function Home() {
@@ -22,13 +25,15 @@ export default function Home() {
   const [balance, setBalance] = useState("0.0"); // State for balance
 
 
-  // On initial load, check if a mnemonic is already saved
-  useEffect(() => {
-    const savedMnemonic = loadMnemonic();
-    if (savedMnemonic) {
-      handleLogin(savedMnemonic);
-    }
-  }, []);
+  
+
+useEffect(() => {
+  console.log("acount length",accounts.length);
+  if(accounts.length)
+  saveAccountCount(accounts.length);
+}, [accounts]); // This hook re-runs whenever activeAccount changes
+
+
 
    // NEW: useEffect to fetch balance when activeAccount changes
   useEffect(() => {
@@ -82,26 +87,40 @@ export default function Home() {
     const newMnemonic = createNewWallet();
     alert(`IMPORTANT: Please save this mnemonic phrase in a secure place:\n\n${newMnemonic}`);
     saveMnemonic(newMnemonic);
+    saveAccountCount(1);
     handleLogin(newMnemonic);
   };
 
-  const onCancel=()=>{
-    console.log("cancelled");
-  }
-  const onSend=()=>{
-    setView('Send');
-    console.log("send");
-
-  }
 
   const handleLogin = (mnemonic) => {
-    setMnemonic(mnemonic);
-    // Derive the first account by default
-    const firstAccount = getAccountFromMnemonic(mnemonic, 0);
-    setAccounts([firstAccount]);
-    setActiveAccount(firstAccount);
-  };
+    // 1. Load the number of accounts the user had previously.
+    const accountCount = loadAccountCount();
+    console.log("acount count after loading",accountCount);
 
+    
+    const derivedAccounts = [];
+    // 2. Loop from 0 to the saved count to regenerate all accounts.
+    for (let i = 0; i < accountCount; i++) {
+      const account = getAccountFromMnemonic(mnemonic, i);
+      derivedAccounts.push(account);
+    }
+
+    setMnemonic(mnemonic);
+    setAccounts(derivedAccounts);
+    // 3. Set the active account (e.g., the first one, or you could
+    // also e and load the last active account's index).
+    setActiveAccount(derivedAccounts[0]);
+  };
+  // On initial load, check if a mnemonic is already saved
+  useEffect(() => {
+    console.log("user refreshed");
+    const savedMnemonic = loadMnemonic();
+    console.log(savedMnemonic);
+  
+    if (savedMnemonic) {
+      handleLogin(savedMnemonic);
+    }
+  }, []);
   const handleAddAccount = () => {
     // The new account's index is simply the current number of accounts
     const newIndex = accounts.length;
@@ -111,6 +130,7 @@ export default function Home() {
   };
   
   const handleLogout = () => {
+    saveAccountCount();
     deleteMnemonic();
     setMnemonic(null);
     setAccounts([]);
