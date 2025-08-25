@@ -2,7 +2,8 @@
 import { useState, useEffect } from 'react';
 import Dashboard from '../components/Dashboard';
 import SendForm from '../components/SendForm';
-import Welcome from '../components/Welcome'; // We'll create this simple component
+import Welcome from '../components/Welcome'; 
+import ImportForm from '../components/ImportForm';
 
 import {
   createNewWallet,
@@ -14,7 +15,8 @@ import {
   sendTransaction,
   loadAccountCount,
   deleteAccountCount,
-  saveAccountCount
+  saveAccountCount,
+  validateMnemonic
 } from '../lib/wallet';
 
 export default function Home() {
@@ -24,6 +26,7 @@ export default function Home() {
   const [view,setView]=useState("Dashboard");
   const [balance, setBalance] = useState("0.0"); // State for balance
 
+  const [authView, setAuthView] = useState('welcome'); // 'welcome' or 'import'
 
   
 
@@ -50,6 +53,27 @@ useEffect(() => {
 
 
   
+  // handling importing mnemonic
+
+  const handleImportWallet = (mnemonicToImport) => {
+    // 1. Validate the mnemonic
+    if (!validateMnemonic(mnemonicToImport)) {
+      alert("Invalid secret recovery phrase. Please check your words and try again.");
+      return;
+    }
+
+    // 2. If valid, save it and set the initial account count to 1
+    saveMnemonic(mnemonicToImport);
+    saveAccountCount(1); // Reset to 1 for the newly imported wallet
+
+    // 3. Call the main login handler
+    handleLogin(mnemonicToImport);
+
+    // 4. Reset the view
+    setAuthView('welcome');
+  };
+
+
 //   for 
   const handleSendSubmit = async (event) => {
     event.preventDefault();
@@ -130,7 +154,7 @@ useEffect(() => {
   };
   
   const handleLogout = () => {
-    saveAccountCount();
+    saveAccountCount(accounts.length);
     deleteMnemonic();
     setMnemonic(null);
     setAccounts([]);
@@ -140,10 +164,29 @@ useEffect(() => {
 
   // --- Render Logic ---
 
+
   if (!activeAccount) {
-    // If there's no active account, show the welcome/login screen
-    return <Welcome onCreateWallet={handleCreateWallet} />;
+    console.log("acc",activeAccount);
+    console.log(authView);
+    // If the user is logged out, decide which view to show
+    if (authView === 'import') {
+      return (
+        <ImportForm 
+          onImport={handleImportWallet} 
+          onCancel={() => setAuthView('welcome')}
+        />
+      );
+    }
+    // By default, show the Welcome component
+    return (
+      <Welcome 
+        onCreateWallet={handleCreateWallet} 
+        onShowImport={() => setAuthView('import')}
+      />
+    );
   }
+
+
 
 
   if (view === 'Send') {
