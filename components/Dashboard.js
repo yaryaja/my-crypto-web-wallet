@@ -5,13 +5,14 @@ export default function Dashboard({
   onAddAccount,
   onSetActiveAccount,
   onLogout,
-  setView
+  setView,
+  onSend,
+  balance
 }) {
   // In a real app, you would fetch the balance for the activeAccount
-  const balance = "0.0000"; // Placeholder balance
 
-  const displayAddress = `${activeAccount.address.substring(0, 6)}...${activeAccount.address.substring(activeAccount.address.length - 4)}`;
-
+  const displayAddress = `${activeAccount.address}...${activeAccount.address.substring(activeAccount.address.length - 4)}`;
+  
   return (
     <div>
       <div className="flex justify-between items-center mb-4">
@@ -53,7 +54,7 @@ export default function Dashboard({
         </button>
         <button
           className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition duration-300"
-          onClick={()=>setView("Send")}
+          onClick={onSend}
         >
           Send
         </button>

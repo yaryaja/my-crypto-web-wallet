@@ -3,12 +3,15 @@ import { useState, useEffect } from 'react';
 import Dashboard from '../components/Dashboard';
 import SendForm from '../components/SendForm';
 import Welcome from '../components/Welcome'; // We'll create this simple component
+
 import {
   createNewWallet,
   getAccountFromMnemonic,
   saveMnemonic,
   loadMnemonic,
-  deleteMnemonic
+  deleteMnemonic,
+  getBalance,
+  sendTransaction
 } from '../lib/wallet';
 
 export default function Home() {
@@ -16,6 +19,8 @@ export default function Home() {
   const [accounts, setAccounts] = useState([]);
   const [activeAccount, setActiveAccount] = useState(null);
   const [view,setView]=useState("Dashboard");
+  const [balance, setBalance] = useState("0.0"); // State for balance
+
 
   // On initial load, check if a mnemonic is already saved
   useEffect(() => {
@@ -24,6 +29,52 @@ export default function Home() {
       handleLogin(savedMnemonic);
     }
   }, []);
+
+   // NEW: useEffect to fetch balance when activeAccount changes
+  useEffect(() => {
+    if (!activeAccount) return;
+
+    const fetchBalance = async () => {
+      setBalance("..."); // Show a loading indicator
+      const newBalance = await getBalance(activeAccount.address);
+      setBalance(newBalance);
+    };
+
+    fetchBalance();
+  }, [activeAccount]); // This hook re-runs whenever activeAccount changes
+
+
+  
+//   for 
+  const handleSendSubmit = async (event) => {
+    event.preventDefault();
+
+    const recipient = event.target.recipient.value;
+    console.log("Recipient:",recipient);
+
+    const amount = event.target.amount.value;
+
+    if (!recipient || !amount) {
+        alert("Please fill in all fields.");
+        return;
+    }
+
+    try {
+        alert("Sending transaction... Please wait.");
+        const txHash = await sendTransaction(activeAccount, recipient, amount);
+        alert(`Transaction sent! Hash: ${txHash}`);
+        // Refresh balance after sending
+        const newBalance = await getBalance(activeAccount.address);
+        setBalance(newBalance);
+    } catch (error) {
+        console.error("Transaction failed:", error);
+        alert(`Transaction failed: ${error.message}`);
+    } finally {
+        setView('dashboard'); // Go back to the dashboard
+    }
+  };
+
+
 
   // --- Wallet Management Functions ---
 
@@ -64,6 +115,7 @@ export default function Home() {
     setMnemonic(null);
     setAccounts([]);
     setActiveAccount(null);
+    
   };
 
   // --- Render Logic ---
@@ -73,10 +125,15 @@ export default function Home() {
     return <Welcome onCreateWallet={handleCreateWallet} />;
   }
 
+
+  if (view === 'Send') {
+    return <SendForm onCancel={() => setView('dashboard')} onSend={handleSendSubmit} />
+  }
+
   // If we have an active account, show the dashboard
 return (
-  <>
-    {view === "Dashboard" && (
+  
+    
       <Dashboard
         accounts={accounts}
         activeAccount={activeAccount}
@@ -84,17 +141,15 @@ return (
         onSetActiveAccount={setActiveAccount}
         onLogout={handleLogout}
         setView={setView}
-      />
-    )}
+        onSend={() => setView('Send')}
+        balance={balance} // Pass the real balance
 
-    {view === "Send" && (
-      <SendForm
-        onCancel={oncancel}
-        onSend={onSend}
-        
+      
       />
-    )}
-  </>
+    
+
+    
+  
 );
 
 
